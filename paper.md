@@ -1,13 +1,60 @@
-# Scraping the `[[noreturn]]`: unreachability in the type system
+<pre class='metadata'>
+Title: A type for functions that do not return
+Shortname: D####
+Revision: 0
+!Draft Revision: 0
+Audience: LEWG, EWG
+Status: D
+Group: WG21
+URL:
+!Source: <a href="https://github.com/ecatmur/no-return/blob/main/paper.md">github.com/ecatmur/no-return/blob/main/paper.md</a>
+!Current: <a href="https://htmlpreview.github.io/?https://github.com/ecatmur/no-return/blob/r0/D####R0.html">github.com/ecatmur/no-return/blob/r0/D####R0.html</a>
+Editor: Ed Catmur, ed@catmur.uk
+Markup Shorthands: markdown yes, biblio yes, markup yes
+Abstract:
+  Currently, C++ designates functions that do not return to their caller via the <code>[[noreturn]]</code> attribute. This is not visible to the type system
+  and so is not amenable to metaprogramming. We propose adding a fundamental type that can be used to signify functions that do not return.
+Date: 2023-12-07
+</pre>
 
-## 1. Abstract
-```
-using noreturn_t = decltype(throw);
-```
+## 1. Changelog
+
+: v0
+:: Initial submission
+
+## 2. Motivation and scope
+
+<code>std::visit</code> is constrained by requiring that the function object return the same type and value category for all combinations of alternatives.
+This is fine, since if we want smarter behavior we can calculate an appropraite return type, for example <code>std::common_type</code>:
+
+<code>
+template<class F, class... T>
+auto common_visit(F visitor, std::variant<T...> const& variant) {
+    return std::visit<std::common_type_t<std::invoke_result_t<F, T>...>>(visitor, variant);
+    //                ^^^^^^^^^^^^^^^^^^ or std::common_reference_t
+    //                ^^^^^^^^^^^^^^^^^^ or std::variant
+}
+</code>
+
+However, what if some of the alternatives are inapplicable to a visitor?
+    
+<code>
+std::variant<short, int, double> v;
+int i = common_visit([]<class T>(T x) {
+    if constexpr (std::integral<T>)
+        return x + 1;
+    else
+        throw std::runtime_error("expected integral T");
+}, v);
+</code>
+
+The lambda 
+
+// ternary conditional
+
 We already have `[[noreturn]]` as an annotation[^1] and P0627[^2] will give us `std::unreachable`.
 This paper proposes adding unreachability to the type system in a complementary manner.
 
-## 2. Motivation
 `std::visit` requires its visitor to return "a valid expression of the same type and value category, for all combinations of alternative types of all variants"[^3].
 A more advanced visit function might deduce its return type using `std::common_reference`:
 
@@ -28,6 +75,10 @@ However this falls apart if the visitor is inapplicable to some alternatives; th
 We propose a type to denote unreachability; in type theory this is variously called the "bottom" type[^4] (since it sits at the bottom of the type heirarchy) or the "empty" type (since it has no values).
 
 This will be defined as the type of a throw expression[^5] (as `nullptr_t` is the type of `nullptr`).
+
+```
+using noreturn_t = decltype(throw);
+```
 
 ### 3.1. Language changes
 `decltype(throw)` will be valid and yield the type `noreturn_t`.
