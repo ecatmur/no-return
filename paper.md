@@ -38,6 +38,7 @@ Date: 2023-12-07
 
 We propose to add a fundamental type, `std::noreturn`, that can be used as the return type of functions that do not return to their caller.
 In type theory this is variously called the "bottom" type[[wiki]] or the "empty" type (since it has no values; not to be confused with[[#std-monostate]] empty class types).
+It is a feature of many other programming languages, and can be relatively painlessly integrated into C++'s type system while increasing expressivity of code and reducing special cases in the language.
 
 ## 3. Motivation and Scope
 
@@ -168,19 +169,25 @@ Some possibilities:
 
 We prefer `noreturn`, which is the name used by D and (modulo capitalization) by Python. 
 
-## 5.2 Why not `[[noreturn]]`?
+## 5.2 Why not...
 
-## 5.3 Why not `void`?
+### 5.2.1 `[[noreturn]]`?
 
-## 5.4 Why not an empty class type, like `std::monostate`? {#std-monostate}
+### 5.2.2 `void`?
 
-## 5.5 Why not a class type with deleted constructors?
+### 5.2.3 Why not an empty class type, like `std::monostate`? {#std-monostate}
 
-## 5.6 Does this deprecate [[noreturn]]?
+### 5.2.4 Why not a class type with deleted constructors?
 
-## 5.7 Does this break API?
+### 5.2.5 Or some other nonconstructible type, then?
 
-## 5.8 Does this break ABI?
+## 5.3 Does this deprecate [[noreturn]]?
+
+## 5.4 Does this break API?
+
+## 5.5 Does this break ABI?
+
+## 5.6 What about C?
 
 # 6. Implementation experience
 
