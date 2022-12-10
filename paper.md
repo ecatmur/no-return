@@ -1,5 +1,5 @@
 <pre class='metadata'>
-Title: A type for functions that do not return
+Title: A type for functions that do not return to their caller
 Shortname: D####
 Revision: 0
 !Draft Revision: 0
@@ -13,7 +13,7 @@ Editor: Ed Catmur, ed@catmur.uk
 Markup Shorthands: markdown yes, biblio yes, markup yes
 Abstract:
   Currently, C++ designates functions that do not return to their caller via the <code>[[noreturn]]</code> attribute. This is not visible to the type system
-  and so is not amenable to metaprogramming. We propose adding a fundamental type that can be used to signify functions that do not return.
+  and so is not amenable to metaprogramming. We propose adding a fundamental type that can be used to signify functions that do not return to their caller.
 Date: 2023-12-07
 </pre>
 <pre class='biblio'>
@@ -116,8 +116,9 @@ Expressions of type `cv std::noreturn` can be (implicitly?) converted to any typ
 For forming compound types, the same restrictions apply as with `void`: no references, arrays, etc.
 In addition, forming pointers to `std::noreturn` is invalid.
 The only compound types that can be formed from `std::noreturn` are cv-qualified variants, and function types having `std::noreturn` as their return type.
+`cv std::noreturn` can be used as a (type) template parameter.
 
-If implementable, a function or member function with return type `std::noreturn` should be implicitly `[[noreturn]]`.
+A function or member function with return type `std::noreturn` is implicitly `[[noreturn]]`.
 
 In a conditional expression, if either branch is of type `std::noreturn`, the result is the type and category of the other branch.
 This replaces the existing language on throw expressions. If both branches are of type `std::noreturn`, the result is `std::noreturn`.
@@ -134,7 +135,7 @@ On the other hand, `[] { throw; }` continues to have deduced return type `void`.
 `std::noreturn` is defined (in `<cstddef>`), as (the equivalent of) `decltype(throw)`.
 
 `std::common_type` and `std::common_reference` automatically handle `std::noreturn` (via the change to the result type of the conditional expression).
-Other type queries give results as above; for example, `std::is_convertible_v<std::noreturn, int>` is `true`.
+Other type queries give results as above; for example, `std::is_convertible_v<std::noreturn, int&>` is `true`.
 
 The same exemption as for `void` is applied to `std::declval<cv std::noreturn>()`, such that it operates without attempting to construct an invalid reference type.
 
@@ -155,6 +156,9 @@ template<class F, class... Args>
 ## 5. Design Decisions
 
 ## 5.1 Naming
+
+Some possibilities:
+
 * `noreturn` / `noreturn_t`
 * `empty` / `empty_t`
 * `bottom` / `bottom_t`
@@ -162,13 +166,15 @@ template<class F, class... Args>
 * `throw_t` (like `nullptr_t`)
 * `nilstate` (like `monostate`)
 
+We prefer `noreturn`, which is the name used by D and (modulo capitalization) by Python. 
+
 ## 5.2 Why not `[[noreturn]]`?
 
 ## 5.3 Why not `void`?
 
 ## 5.4 Why not an empty class type, like `std::monostate`? {#std-monostate}
 
-## 5.5 Why not an empty class type with deleted constructors?
+## 5.5 Why not a class type with deleted constructors?
 
 ## 5.6 Does this deprecate [[noreturn]]?
 
