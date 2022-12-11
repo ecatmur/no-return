@@ -45,7 +45,7 @@ It is a feature of many other programming languages, and can be relatively painl
 ### 3.1 Variant visit
 
 `std::visit` is constrained by requiring that the function object return the same type and value category for all combinations of alternatives.
-This is fine, since if we want smarter behavior we can calculate an appropraite return type, for example `std::common_type`:
+This is fine, since if we want smarter behavior we can calculate an appropriate return type, for example `std::common_type`:
 
 ```c++
 template<class F, class... T>
@@ -110,9 +110,9 @@ We propose adding a fundamental type, `std::noreturn`. Like `void`, this is a ty
 
 Functions with return type `std::noreturn` do not return to their caller. This means that either they run forever (a non-terminating computation), or they terminate the program, or they exit by throwing an exception.
 
-Expressions of type `cv std::noreturn` can be (implicitly?) converted to any type that can be the type of an expression, including `void`. This is a key difference to `void`, where any expression can be converted *to* `void`; the only valid conversions to `cv std::noreturn` are *from* `cv std::noreturn`.
+Expressions of type `cv std::noreturn` can be (implicitly?) converted to any type that can be the type of an expression, including `void`. This is a key difference with `void`, where any expression can be converted *to* `void`; the only valid conversions to `cv std::noreturn` are *from* `cv std::noreturn`.
 
-`decltype(<throw-expression>)` shall change from `void` to `std::noreturn`.
+`decltype(<throw-expression>)` changes from `void` to `std::noreturn`.
 
 For forming compound types, the same restrictions apply as with `void`: no references, arrays, etc.
 In addition, forming pointers to `std::noreturn` is invalid.
