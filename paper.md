@@ -179,6 +179,19 @@ We prefer `noreturn`, which is the name used by D and (modulo capitalization) by
 
 ### 5.2.4 Why not a class type with deleted constructors?
 
+Yes, we can get quite far with this approach:
+
+```c++
+class noreturn {
+public:
+    noreturn() = delete;
+    noreturn(noreturn const&) = delete;
+    noreturn& operator=(noreturn const&) = delete;
+    template<class T> operator T&() const volatile;
+    template<class T> operator T&&() const volatile;
+};
+```
+
 ### 5.2.5 Or some other nonconstructible type, then?
 
 ## 5.3 Does this deprecate [[noreturn]]?
@@ -194,3 +207,77 @@ We prefer `noreturn`, which is the name used by D and (modulo capitalization) by
 # 7. Technical specification
 
 # 8. Acknowledgements
+
+# 9. Appendices
+
+## 9.1 Full example
+
+```c++
+#include <functional>
+#include <utility>
+class noreturn {
+public:
+    noreturn() = delete;
+    noreturn& operator=(noreturn const&) = delete;
+    template<class T> operator T&() const volatile;
+    template<class T> operator T&&() const volatile;
+#if _MSC_VER
+    noreturn(noreturn const&) = delete;
+#else
+private:
+    noreturn(noreturn const&);
+#endif
+};
+template<class F, class... Args>
+[[noreturn]] constexpr noreturn invoke_noreturn(F&& f, Args&&... args) noexcept(std::is_nothrow_invocable_v<F, Args...>) {
+    std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
+    std::unreachable();
+#if __clang__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-noreturn"
+    return invoke_noreturn([]{});
+#pragma GCC diagnostic pop
+#endif
+}
+noreturn f();
+noreturn g() { return f(); }
+#include <any>
+#include <bit>
+#include <variant>
+int main() {
+    int i [[maybe_unused]] = f();
+    std::any a = g();
+    static_assert(not std::is_default_constructible_v<noreturn>);
+    static_assert(not std::is_copy_constructible_v<noreturn>);
+    static_assert(not std::is_copy_assignable_v<noreturn>);
+    static_assert(not std::is_trivially_copyable_v<noreturn>);
+    static_assert(not [](auto x) {
+        return requires { std::bit_cast<noreturn>(x); };
+    }(std::monostate()));
+    static_cast<void>(f());
+    static_assert(std::is_same_v<int, std::common_type_t<noreturn, int>>);
+    static_assert(std::is_same_v<int, std::common_reference_t<noreturn, int>>);
+    static_assert(std::is_same_v<int&, std::common_reference_t<noreturn, int&>>);
+#if not _MSC_VER
+    static_assert(std::is_same_v<int&&, std::common_reference_t<noreturn, int&&>>);
+#endif
+    auto j [[maybe_unused]] = true ? i : f();
+#if not _MSC_VER
+    auto& k [[maybe_unused]] = true ? j : f();
+#endif
+#if __GNUC__ and not __clang__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdangling-reference"
+#endif
+    auto&& l [[maybe_unused]] = true ? std::move(j) : f();
+#if __GNUC__ and not __clang__
+#pragma GCC diagnostic pop
+#endif
+
+    // however:
+    std::variant<int, noreturn> v [[maybe_unused]];  // :(
+    union { int i; noreturn n; } u = {.i = 0};
+    auto& r [[maybe_unused]] = u.n;
+    auto* p [[maybe_unused]] = &u.n;
+}
+```
